@@ -213,9 +213,10 @@ def configured_objects(source: str) -> Dict[str, str]:
         if status not in ("Matching", "NonMatching", "Equivalent"):
             raise SnapshotBuildError("unsupported source-selection expression")
         path = node.args[1].value
-        if path in result:
-            raise SnapshotBuildError("duplicate configured source owner: {}".format(path))
-        result[path] = "matching" if status == "Matching" else "remaining"
+        state = "matching" if status == "Matching" else "remaining"
+        # A shared framework source may be compiled by more than one Rel entry (m634DLL compiles
+        # REL/framework/free.cpp with its own flags); it counts as matching only if every entry says so.
+        result[path] = state if result.get(path, state) == state else "remaining"
 
     # A mutation after config.libs would make the static AST census incomplete.
     start = tree.body.index(assignments[0])
